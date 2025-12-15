@@ -145,7 +145,7 @@ st.sidebar.markdown("---")
 # Navegación
 page = st.sidebar.radio(
     "Navegar",
-    ["📊 Dashboard Global", "🌍 Comparación de Países", "📖 Historia de la Pandemia", "🔍 Explorador de Datos"]
+    ["📊 Dashboard Global", "🌍 Comparación de Países", "📖 Historia de la Pandemia", "📈 Dashboard Storytelling", "🔍 Explorador de Datos"]
 )
 
 st.sidebar.markdown("---")
@@ -747,8 +747,499 @@ elif page == "📖 Historia de la Pandemia":
         """)
 
 
+
 # ============================================================
-# PÁGINA 4: EXPLORADOR DE DATOS
+# PÁGINA 4: DASHBOARD STORYTELLING
+# ============================================================
+elif page == "📈 Dashboard Storytelling":
+    st.header("📈 Dashboard Storytelling: El Viaje del COVID-19")
+    
+    st.markdown("""
+    **Un análisis narrativo de la pandemia global**
+    
+    Este dashboard cuenta la historia del COVID-19 a través de datos, respondiendo a las preguntas clave 
+    sobre su evolución, el impacto de las vacunas y las desigualdades socioeconómicas.
+    """)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # VISUALIZACIÓN 1: EVOLUCIÓN DEL COVID - TOP 10 PAÍSES
+    # ============================================================
+    with st.container():
+        st.subheader("📊 ¿Cómo fue la evolución del COVID?")
+        st.markdown("""
+        **Top 10 países por casos totales - Una carrera contra la pandemia**
+        
+        Observa cómo distintos países experimentaron oleadas de contagio en diferentes momentos.
+        """)
+        
+        # Preparar datos para la animación
+        with st.spinner('Preparando visualización animada...'):
+            anim_df = prepare_animation_data(df)
+        
+        # Selector de métrica para flexibilidad
+        metric_evolution = st.selectbox(
+            "Selecciona la métrica",
+            options=['total_cases', 'total_deaths', 'total_cases_per_million'],
+            format_func=lambda x: {
+                'total_cases': 'Casos Totales',
+                'total_deaths': 'Muertes Totales',
+                'total_cases_per_million': 'Casos por Millón de Habitantes'
+            }[x],
+            key='evolution_metric'
+        )
+        
+        # Información de métricas
+        metric_info = {
+            'total_cases': {'title': 'Casos Totales', 'format': '{:,.0f}'},
+            'total_deaths': {'title': 'Muertes Totales', 'format': '{:,.0f}'},
+            'total_cases_per_million': {'title': 'Casos por Millón', 'format': '{:,.1f}'}
+        }
+        
+        # Preparar datos para bar chart race - Top 10
+        anim_df['date_str'] = anim_df['date'].dt.strftime('%Y-%m-%d')
+        dates_sorted = sorted(anim_df['date_str'].unique())
+        
+        # Crear figura base
+        first_date = dates_sorted[0]
+        first_data = anim_df[anim_df['date_str'] == first_date].nlargest(10, metric_evolution).sort_values(metric_evolution)
+        first_max = first_data[metric_evolution].max()
+        
+        fig_evolution = go.Figure()
+        
+        # Añadir primer frame
+        fig_evolution.add_trace(go.Bar(
+            x=first_data[metric_evolution],
+            y=first_data['location'],
+            orientation='h',
+            marker=dict(
+                color=first_data['location'].astype('category').cat.codes,
+                colorscale='Viridis'
+            ),
+            text=first_data[metric_evolution].apply(lambda x: metric_info[metric_evolution]['format'].format(x)),
+            textposition='outside'
+        ))
+        
+        # Construir frames
+        frames = []
+        for date_str in dates_sorted:
+            frame_data = anim_df[anim_df['date_str'] == date_str].nlargest(10, metric_evolution).sort_values(metric_evolution)
+            frame_max = frame_data[metric_evolution].max()
+            
+            frame = go.Frame(
+                data=[go.Bar(
+                    x=frame_data[metric_evolution],
+                    y=frame_data['location'],
+                    orientation='h',
+                    marker=dict(
+                        color=frame_data['location'].astype('category').cat.codes,
+                        colorscale='Viridis'
+                    ),
+                    text=frame_data[metric_evolution].apply(lambda x: metric_info[metric_evolution]['format'].format(x)),
+                    textposition='outside'
+                )],
+                name=date_str,
+                layout=go.Layout(
+                    xaxis=dict(range=[0, frame_max * 1.15])
+                )
+            )
+            frames.append(frame)
+        
+        fig_evolution.frames = frames
+        
+        # Layout
+        fig_evolution.update_layout(
+            title=f'Evolución: Top 10 Países por {metric_info[metric_evolution]["title"]}',
+            xaxis=dict(
+                title=metric_info[metric_evolution]['title'],
+                range=[0, first_max * 1.15]
+            ),
+            yaxis=dict(title=''),
+            showlegend=False,
+            height=500,
+            bargap=0.1,
+            margin=dict(l=150, r=50, t=50, b=50),
+            updatemenus=[{
+                'type': 'buttons',
+                'showactive': False,
+                'buttons': [{
+                    'label': '▶ Play',
+                    'method': 'animate',
+                    'args': [None, {
+                        'frame': {'duration': 400, 'redraw': True},
+                        'fromcurrent': True,
+                        'transition': {'duration': 300, 'easing': 'linear'}
+                    }]
+                }, {
+                    'label': '⏸ Pause',
+                    'method': 'animate',
+                    'args': [[None], {
+                        'frame': {'duration': 0, 'redraw': False},
+                        'mode': 'immediate',
+                        'transition': {'duration': 0}
+                    }]
+                }],
+                'x': 0.1,
+                'y': -0.05,
+                'xanchor': 'left',
+                'yanchor': 'top'
+            }],
+            sliders=[{
+                'active': 0,
+                'steps': [{
+                    'args': [[f.name], {
+                        'frame': {'duration': 0, 'redraw': True},
+                        'mode': 'immediate',
+                        'transition': {'duration': 0}
+                    }],
+                    'label': f.name,
+                    'method': 'animate'
+                } for f in frames],
+                'x': 0.1,
+                'len': 0.9,
+                'y': -0.15,
+                'xanchor': 'left',
+                'yanchor': 'top'
+            }]
+        )
+        
+        st.plotly_chart(fig_evolution, use_container_width=True)
+        
+        # Insights
+        st.info("""
+        **💡 Insights Clave:**
+        - Los epicentros cambiaron dinámicamente: de China e Italia al inicio, a Estados Unidos, India y Brasil posteriormente
+        - Las oleadas fueron asimétricas: mientras unos países alcanzaban picos, otros experimentaban descensos
+        - Los países más poblados naturalmente lideraron en números absolutos, pero las tasas per cápita revelan una historia diferente
+        """)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # VISUALIZACIÓN 2: IMPACTO DE LA VACUNA EN LAS MUERTES
+    # ============================================================
+    with st.container():
+        st.subheader("💉 ¿Cómo afectó la vacuna al número de muertes diarias?")
+        st.markdown("""
+        **La vacunación como punto de inflexión**
+        
+        Analiza cómo las campañas de vacunación transformaron la letalidad del virus.
+        """)
+        
+        # Selector de ubicaciones
+        col_vax1, col_vax2 = st.columns(2)
+        
+        all_locs_vax = ['World'] + sorted(df[df['is_aggregate'] == False]['location'].unique().tolist())
+        
+        with col_vax1:
+            sel_countries_vax = st.multiselect(
+                "Selecciona países/regiones para comparar",
+                options=all_locs_vax,
+                default=['World', 'Spain', 'United States', 'United Kingdom'],
+                max_selections=5,
+                key='vax_impact_countries'
+            )
+        
+        with col_vax2:
+            metric_vax = st.selectbox(
+                "Métrica de mortalidad",
+                ['new_deaths_smoothed', 'new_deaths_smoothed_per_million'],
+                format_func=lambda x: {
+                    'new_deaths_smoothed': 'Muertes Diarias (promedio 7 días)',
+                    'new_deaths_smoothed_per_million': 'Muertes Diarias por Millón'
+                }[x],
+                key='vax_metric'
+            )
+        
+        if sel_countries_vax:
+            # Filtrar datos
+            vax_impact_df = df[df['location'].isin(sel_countries_vax)]
+            
+            # Crear figura con dos ejes Y
+            fig_vax = go.Figure()
+            
+            # Añadir líneas de muertes para cada país
+            for country in sel_countries_vax:
+                country_data = vax_impact_df[vax_impact_df['location'] == country]
+                fig_vax.add_trace(go.Scatter(
+                    x=country_data['date'],
+                    y=country_data[metric_vax],
+                    name=country,
+                    mode='lines',
+                    line=dict(width=2)
+                ))
+            
+            # Eventos clave de vacunación
+            vax_events = [
+                ('2020-12-08', 'Primera Vacuna\n(Reino Unido)', 'green'),
+                ('2021-01-01', 'Inicio Campaña\nMasiva', 'blue'),
+                ('2021-06-01', 'Aceleración\nGlobal', 'purple'),
+                ('2021-12-01', 'Boosters', 'orange')
+            ]
+            
+            for date, label, color in vax_events:
+                fig_vax.add_vline(
+                    x=date, 
+                    line_dash="dash", 
+                    line_color=color, 
+                    opacity=0.6,
+                    line_width=2
+                )
+                fig_vax.add_annotation(
+                    x=date, 
+                    y=1, 
+                    text=label, 
+                    showarrow=False, 
+                    yref='paper', 
+                    yanchor='top',
+                    font=dict(color=color, size=10),
+                    textangle=-90,
+                    xshift=10
+                )
+            
+            fig_vax.update_layout(
+                title='Impacto de la Vacunación en la Mortalidad',
+                xaxis_title='Fecha',
+                yaxis_title='Muertes Diarias' if metric_vax == 'new_deaths_smoothed' else 'Muertes por Millón',
+                hovermode='x unified',
+                height=600,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            
+            st.plotly_chart(fig_vax, use_container_width=True)
+            
+            st.success("""
+            **✅ Conclusión del Análisis:**
+            - **Antes de la vacuna (2020)**: Las muertes aumentaban exponencialmente con cada ola
+            - **Después de la vacuna (2021+)**: Aunque los casos continuaron, la mortalidad se redujo drásticamente
+            - **Efecto de las campañas masivas**: Los países con vacunación temprana y extensa vieron descensos más pronunciados
+            - **Variantes vs. Vacunas**: Incluso con Ómicron (altamente contagiosa), las muertes fueron significativamente menores gracias a la inmunización
+            """)
+        else:
+            st.warning("Selecciona al menos un país/región para el análisis")
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # VISUALIZACIÓN 3: ANÁLISIS SOCIOECONÓMICO
+    # ============================================================
+    with st.container():
+        st.subheader("🌐 ¿Existe relación entre nivel socioeconómico y vacunación?")
+        st.markdown("""
+        **Desigualdad global en la distribución de vacunas**
+        
+        Exploremos cómo el desarrollo económico influyó en el acceso a la vacunación.
+        """)
+        
+        # Preparar datos socioeconómicos
+        # Usar último registro válido por país
+        socio_df = df[df['is_aggregate'] == False].copy()
+        
+        # Obtener el último registro con datos de vacunación válidos para cada país
+        latest_socio = socio_df.groupby('location').last().reset_index()
+        
+        # Filtrar países con datos completos
+        latest_socio = latest_socio[
+            (latest_socio['people_fully_vaccinated_per_hundred'].notna()) &
+            (latest_socio['gdp_per_capita'].notna()) &
+            (latest_socio['human_development_index'].notna())
+        ]
+        
+        # Selector de indicador socioeconómico
+        socio_indicator = st.selectbox(
+            "Selecciona indicador socioeconómico",
+            ['gdp_per_capita', 'human_development_index'],
+            format_func=lambda x: {
+                'gdp_per_capita': 'PIB per cápita (USD)',
+                'human_development_index': 'Índice de Desarrollo Humano (IDH)'
+            }[x],
+            key='socio_indicator'
+        )
+        
+        # Crear scatter plot
+        fig_socio = px.scatter(
+            latest_socio,
+            x=socio_indicator,
+            y='people_fully_vaccinated_per_hundred',
+            size='population',
+            color='continent',
+            hover_name='location',
+            hover_data={
+                socio_indicator: ':,.0f' if socio_indicator == 'gdp_per_capita' else ':,.3f',
+                'people_fully_vaccinated_per_hundred': ':,.1f',
+                'population': ':,.0f'
+            },
+            labels={
+                'gdp_per_capita': 'PIB per Cápita (USD)',
+                'human_development_index': 'Índice de Desarrollo Humano',
+                'people_fully_vaccinated_per_hundred': '% Población Totalmente Vacunada',
+                'continent': 'Continente',
+                'population': 'Población'
+            },
+            title='Relación entre Nivel Socioeconómico y Vacunación',
+            trendline='ols',
+            trendline_scope='overall'
+        )
+        
+        fig_socio.update_layout(
+            height=600,
+            xaxis_title='PIB per Cápita (USD)' if socio_indicator == 'gdp_per_capita' else 'Índice de Desarrollo Humano',
+            yaxis_title='% Población Vacunada',
+            legend_title_text='Continente'
+        )
+        
+        st.plotly_chart(fig_socio, use_container_width=True)
+        
+        # Calcular correlación
+        correlation = latest_socio[[socio_indicator, 'people_fully_vaccinated_per_hundred']].corr().iloc[0, 1]
+        
+        st.warning(f"""
+        **⚠️ Inequidad Revelada:**
+        - **Correlación detectada**: {correlation:.3f} entre {socio_indicator.replace('_', ' ')} y tasa de vacunación
+        - **Brecha socioeconómica**: Los países de ingresos altos alcanzaron tasas de vacunación del 70-90%, mientras que países de bajos ingresos apenas superaron el 20-30%
+        - **Acceso desigual**: La riqueza del país fue un predictor significativo del acceso temprano a vacunas
+        - **Implicaciones**: Esta desigualdad prolongó la pandemia globalmente y aumentó el riesgo de nuevas variantes
+        """)
+        
+        # Tabla de extremos
+        st.markdown("**Comparación: Los más vacunados vs. los menos vacunados**")
+        
+        col_top, col_bottom = st.columns(2)
+        
+        with col_top:
+            st.markdown("🏆 **Top 10 - Mayor Vacunación**")
+            top_vax_socio = latest_socio.nlargest(10, 'people_fully_vaccinated_per_hundred')[
+                ['location', 'people_fully_vaccinated_per_hundred', socio_indicator]
+            ].round(2)
+            top_vax_socio.columns = ['País', '% Vacunado', 'Indicador Socioeconómico']
+            st.dataframe(top_vax_socio, hide_index=True, use_container_width=True)
+        
+        with col_bottom:
+            st.markdown("📉 **Bottom 10 - Menor Vacunación**")
+            bottom_vax_socio = latest_socio.nsmallest(10, 'people_fully_vaccinated_per_hundred')[
+                ['location', 'people_fully_vaccinated_per_hundred', socio_indicator]
+            ].round(2)
+            bottom_vax_socio.columns = ['País', '% Vacunado', 'Indicador Socioeconómico']
+            st.dataframe(bottom_vax_socio, hide_index=True, use_container_width=True)
+    
+    st.markdown("---")
+    
+    # ============================================================
+    # VISUALIZACIÓN 4: PROGRESO GLOBAL DE VACUNACIÓN (BONUS)
+    # ============================================================
+    with st.container():
+        st.subheader("🚀 Progreso Global de Vacunación")
+        st.markdown("""
+        **El mayor esfuerzo de inmunización de la historia**
+        
+        Un vistazo a cómo el mundo se movilizó para vacunar a miles de millones de personas.
+        """)
+        
+        # Datos mundiales de vacunación
+        world_vax_data = df[df['location'] == 'World'].copy()
+        world_vax_data = world_vax_data[world_vax_data['total_vaccinations'].notna()]
+        
+        # Crear gráfico de área
+        fig_global_vax = go.Figure()
+        
+        fig_global_vax.add_trace(go.Scatter(
+            x=world_vax_data['date'],
+            y=world_vax_data['total_vaccinations'],
+            fill='tozeroy',
+            name='Vacunas Acumuladas',
+            line=dict(color='#2ecc71', width=2),
+            fillcolor='rgba(46, 204, 113, 0.3)'
+        ))
+        
+        # Hitos de vacunación
+        milestones = [
+            (1e9, '1 Mil Millones'),
+            (5e9, '5 Mil Millones'),
+            (10e9, '10 Mil Millones'),
+            (13e9, '13 Mil Millones')
+        ]
+        
+        for milestone_val, milestone_label in milestones:
+            milestone_data = world_vax_data[world_vax_data['total_vaccinations'] >= milestone_val]
+            if not milestone_data.empty:
+                first_date = milestone_data.iloc[0]['date']
+                fig_global_vax.add_vline(
+                    x=first_date,
+                    line_dash="dot",
+                    line_color="darkgreen",
+                    opacity=0.5
+                )
+                fig_global_vax.add_annotation(
+                    x=first_date,
+                    y=milestone_val,
+                    text=f"{milestone_label}",
+                    showarrow=True,
+                    arrowhead=2,
+                    bgcolor="white",
+                    bordercolor="darkgreen"
+                )
+        
+        fig_global_vax.update_layout(
+            title='Acumulado Global de Vacunas Administradas',
+            xaxis_title='Fecha',
+            yaxis_title='Total de Vacunas (miles de millones)',
+            hovermode='x unified',
+            height=500,
+            yaxis=dict(tickformat='.2s')
+        )
+        
+        st.plotly_chart(fig_global_vax, use_container_width=True)
+        
+        # Métricas finales
+        if not world_vax_data.empty:
+            total_vax_final = world_vax_data['total_vaccinations'].max()
+            pct_vax_final = world_vax_data['people_fully_vaccinated_per_hundred'].max()
+            
+            col_m1, col_m2, col_m3 = st.columns(3)
+            
+            with col_m1:
+                st.metric("💉 Total Vacunas Administradas", f"{total_vax_final/1e9:.2f} Mil Millones")
+            
+            with col_m2:
+                st.metric("🌍 % Población Mundial Vacunada", f"{pct_vax_final:.1f}%")
+            
+            with col_m3:
+                # Calcular días desde primera vacuna
+                first_vax_date = world_vax_data[world_vax_data['total_vaccinations'] > 0].iloc[0]['date']
+                last_date = world_vax_data['date'].max()
+                days_campaign = (last_date - first_vax_date).days
+                st.metric("📅 Días de Campaña", f"{days_campaign}")
+        
+        st.info("""
+        **🎯 Logro Histórico:**
+        - En menos de 3 años, se administraron más de 13 mil millones de dosis
+        - La velocidad de desarrollo y distribución no tuvo precedentes en la historia médica
+        - A pesar de los desafíos logísticos, se alcanzó una cobertura global significativa
+        - Este esfuerzo representa la mayor campaña de salud pública de todos los tiempos
+        """)
+    
+    st.markdown("---")
+    
+    # RESUMEN FINAL
+    st.subheader("📖 Resumen del Dashboard")
+    st.markdown("""
+    **El COVID-19 en Perspectiva:**
+    
+    1. **Evolución**: La pandemia fue dinámica y asimétrica, con diferentes países experimentando picos en momentos distintos
+    2. **Impacto de las Vacunas**: La inmunización cambió radicalmente el curso de la pandemia, reduciendo drásticamente la mortalidad
+    3. **Inequidad Global**: El acceso a vacunas estuvo profundamente marcado por el nivel socioeconómico de los países
+    4. **Logro Colectivo**: A pesar de las desigualdades, el mundo logró movilizarse para la mayor campaña de vacunación de la historia
+    
+    **Lecciones para el Futuro:**
+    - La cooperación global es esencial en crisis de salud pública
+    - La equidad en el acceso a recursos médicos debe ser prioridad
+    - Los datos abiertos y transparentes son fundamentales para la respuesta efectiva
+    """)
+
+
+# ============================================================
+# PÁGINA 5: EXPLORADOR DE DATOS
 # ============================================================
 elif page == "🔍 Explorador de Datos":
     st.header("🔍 Explorador de Datos")

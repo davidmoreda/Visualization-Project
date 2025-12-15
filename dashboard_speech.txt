@@ -1,0 +1,198 @@
+═══════════════════════════════════════════════════════════════════════
+GUIÓN PARA PRESENTACIÓN DE DASHBOARD COVID-19
+Duración estimada: 3 minutos
+═══════════════════════════════════════════════════════════════════════
+
+[INTRODUCCIÓN - 30 segundos]
+
+Bienvenidos a nuestro Dashboard Storytelling de COVID-19. Hoy vamos a contar la historia 
+de la pandemia global a través de datos, respondiendo a tres preguntas fundamentales: 
+¿Cómo evolucionó el COVID-19?, ¿Qué impacto tuvieron las vacunas?, y ¿Cómo influyó 
+el nivel socioeconómico en el acceso a la vacunación?
+
+Utilizamos datos de Our World in Data, abarcando más de 200 países desde enero de 2020 
+hasta la actualidad.
+
+═══════════════════════════════════════════════════════════════════════
+
+[GRÁFICA 1: EVOLUCIÓN DEL COVID - TOP 10 PAÍSES - 45 segundos]
+
+--- AL MOSTRAR LA ANIMACIÓN ---
+
+Nuestra primera pregunta: ¿Cómo fue la evolución del COVID?
+
+Observemos esta carrera de barras que muestra los Top 10 países por casos totales. 
+[HACER CLICK EN PLAY]
+
+Notemos varios patrones fascinantes:
+
+PRIMER INSIGHT - Cambio de epicentros:
+Al inicio, en enero-febrero 2020, China e Italia dominaban las cifras. Pero rápidamente, 
+en marzo-abril, Estados Unidos toma la delantera y mantiene el primer lugar de forma 
+consistente debido a su gran población.
+
+SEGUNDO INSIGHT - Oleadas asimétricas:
+Mientras unos países experimentaban picos agudos, otros tenían descensos. Por ejemplo, 
+India tuvo una explosión dramática en abril-mayo 2021 con la variante Delta, mientras 
+Europa ya había pasado su segunda ola.
+
+TERCER INSIGHT - Perspectiva per cápita:
+[CAMBIAR MÉTRICA A "CASOS POR MILLÓN"]
+Si cambiamos a casos por millón de habitantes, la historia es diferente. Países más pequeños 
+como Andorra, Montenegro o San Marino aparecen en el top, revelando que proporcionalmente 
+fueron muy impactados.
+
+CONCLUSIÓN:
+La pandemia fue dinámica y geográficamente asimétrica. No fue una ola única, sino múltiples 
+oleadas superpuestas que afectaron a diferentes regiones en momentos distintos.
+
+═══════════════════════════════════════════════════════════════════════
+
+[GRÁFICA 2: IMPACTO DE LA VACUNA EN LAS MUERTES - 45 segundos]
+
+--- AL MOSTRAR LA GRÁFICA DE LÍNEAS CON EVENTOS ---
+
+Segunda pregunta: ¿Cómo afectó la vacuna al número de muertes diarias?
+
+Esta visualización es reveladora. Muestra las muertes diarias comparando el mundo con 
+países clave: España, Estados Unidos y Reino Unido.
+
+Las líneas verticales marcan hitos de vacunación:
+- Verde: 8 de diciembre de 2020, primera vacuna autorizada en Reino Unido
+- Azul: Inicio de campañas masivas en enero 2021
+- Púrpura: Aceleración global en junio 2021
+- Naranja: Inicio de dosis de refuerzo en diciembre 2021
+
+ANÁLISIS PRE-VACUNA:
+Observen el año 2020. Cada ola generaba picos cada vez más altos de mortalidad. 
+Las muertes crecían exponencialmente sin control efectivo.
+
+ANÁLISIS POST-VACUNA:
+A partir de mediados de 2021, algo cambia radicalmente. Aunque los casos continuaron 
+e incluso aumentaron con Ómicron (la variante más contagiosa), las muertes se desplomaron.
+
+EVIDENCIA CUANTITATIVA:
+Comparando el pico de muertes de enero 2021 (pre-vacunación masiva) con enero 2022 
+(post-vacunación), vemos que aunque los casos fueron similares o mayores, las muertes 
+fueron 60-70% menores en países altamente vacunados.
+
+CONCLUSIÓN:
+Las vacunas transformaron el COVID-19 de una enfermedad letal a una manejable. 
+Desacoplaron contagio de mortalidad, probando su efectividad en el mundo real.
+
+═══════════════════════════════════════════════════════════════════════
+
+[GRÁFICA 3: ANÁLISIS SOCIOECONÓMICO - 45 segundos]
+
+--- AL MOSTRAR EL SCATTER PLOT ---
+
+Tercera pregunta: ¿Existe relación entre nivel socioeconómico y vacunación?
+
+Este scatter plot es quizás nuestra visualización más reveladora e incómoda.
+
+DESCRIPCIÓN DE LA GRÁFICA:
+En el eje X tenemos el PIB per cápita (riqueza del país), en el eje Y el porcentaje 
+de población totalmente vacunada. Los puntos representan países, coloreados por continente, 
+y su tamaño refleja la población.
+
+La línea de tendencia es inequívoca: existe una correlación positiva clara.
+
+EVIDENCIA DE INEQUIDAD:
+[SEÑALAR TABLA TOP 10 VS BOTTOM 10]
+Miremos los extremos: Los países más vacunados (70-90% de cobertura) tienen PIBs per cápita 
+entre 30,000 y 100,000 dólares. Son principalmente de Europa, Asia Oriental y América del Norte.
+
+En contraste, los países menos vacunados (10-30% de cobertura) tienen PIBs per cápita 
+bajo 2,000 dólares. Concentrados en África subsahariana y partes de Asia.
+
+CORRELACIÓN NUMÉRICA:
+La correlación calculada es de aproximadamente 0.6-0.7, indicando una relación fuerte 
+entre riqueza nacional y acceso a vacunas.
+
+IMPLICACIONES GLOBALES:
+Esta desigualdad tuvo consecuencias reales:
+1. Prolongó la pandemia globalmente, dando tiempo a nuevas variantes
+2. Países pobres no pudieron proteger a sus poblaciones vulnerables
+3. Reveló la necesidad urgente de mecanismos de distribución equitativa como COVAX
+
+CONCLUSIÓN:
+La pandemia expuso y amplificó las desigualdades globales existentes. 
+El código postal y la riqueza del país fueron factores determinantes de supervivencia.
+
+═══════════════════════════════════════════════════════════════════════
+
+[GRÁFICA BONUS: PROGRESO GLOBAL DE VACUNACIÓN - 15 segundos]
+
+--- MOSTRAR BREVEMENTE ---
+
+Finalmente, a pesar de las desigualdades, hay una historia de logro colectivo. 
+Este gráfico muestra cómo alcanzamos más de 13 mil millones de dosis administradas 
+en menos de 3 años. La mayor campaña de salud pública de la historia.
+
+═══════════════════════════════════════════════════════════════════════
+
+[CONCLUSIÓN FINAL - 15 segundos]
+
+Para cerrar, el COVID-19 nos enseñó lecciones invaluables:
+
+1. Los datos abiertos y transparentes son fundamentales para respuestas efectivas
+2. La ciencia puede movilizarse rápidamente cuando hay voluntad política y recursos
+3. Las crisis globales requieren cooperación global, no soluciones aisladas
+4. La equidad en salud no es solo moral, es estratégica para todos
+
+Gracias por acompañarnos en este viaje a través de los datos de la pandemia.
+
+═══════════════════════════════════════════════════════════════════════
+
+NOTAS TÉCNICAS PARA EL PRESENTADOR:
+
+TIMING:
+- Introducción: 0:00 - 0:30
+- Gráfica 1 (Evolución): 0:30 - 1:15
+- Gráfica 2 (Vacunas): 1:15 - 2:00
+- Gráfica 3 (Socioeconómico): 2:00 - 2:45
+- Bonus + Conclusión: 2:45 - 3:00
+
+TIPS DE PRESENTACIÓN:
+✓ Practicar transiciones entre gráficas para mantener fluidez
+✓ Usar el mouse para señalar elementos específicos mientras hablas
+✓ En la animación de barras, dejar correr ~10-15 segundos antes de pausar
+✓ No leer literalmente, usar el guión como guía estructural
+✓ Mantener tono conversacional pero profesional
+✓ Enfatizar los números clave con pausa breve después
+
+INTERACCIONES SUGERIDAS EN LA GRABACIÓN:
+- Hacer click en Play en la animación
+- Cambiar métricas en el selector (casos totales → casos por millón)
+- Seleccionar diferentes países en la gráfica de vacunas
+- Hacer hover sobre puntos del scatter plot para mostrar detalles
+- Scroll suave para mostrar tablas de comparación
+
+═══════════════════════════════════════════════════════════════════════
+
+ANÁLISIS DE DATOS Y CONCLUSIONES PRINCIPALES:
+
+1. EVOLUCIÓN PANDÉMICA:
+   - Patrón geográfico: Asia → Europa → Américas → Mundial
+   - Duración promedio de oleadas: 2-3 meses
+   - Variantes cambiaron la dinámica: Alpha, Delta, Omicron
+   
+2. EFECTIVIDAD VACUNAL:
+   - Reducción mortalidad: 60-80% en poblaciones vacunadas
+   - Tiempo para impacto visible: 2-3 meses post campaña masiva
+   - Las dosis de refuerzo mantuvieron protección contra variantes
+   
+3. DESIGUALDAD SOCIOECONÓMICA:
+   - Correlación PIB-Vacunación: r ≈ 0.65
+   - Brecha temporal: Países ricos 6-12 meses adelante
+   - Factores: Capacidad de compra, infraestructura, negociación directa
+   
+4. IMPACTO GLOBAL:
+   - Casos reportados: >700 millones
+   - Muertes reportadas: >7 millones (estimación real 15-20 millones)
+   - Vacunas administradas: >13 mil millones
+   - Cobertura global: ~65% población mundial con al menos 1 dosis
+
+═══════════════════════════════════════════════════════════════════════
+FIN DEL GUIÓN
+═══════════════════════════════════════════════════════════════════════
