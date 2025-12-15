@@ -92,6 +92,44 @@ def load_data():
     
     return df
 
+@st.cache_data
+def prepare_animation_data(df):
+    """
+    Prepara datos para animaciones con mayor frecuencia (semanal).
+    Un compromiso entre fluidez (diario) y rendimiento.
+    """
+    # Filtrar solo países reales (no agregaciones)
+    df_countries = df[df['is_aggregate'] == False].copy()
+    
+    # Rellenar datos faltantes hacia adelante para continuidad
+    # Nota: groupby().ffill() elimina las columnas de agrupación, hay que restaurarlas
+    df_sorted = df_countries.sort_values(['location', 'date'])
+    df_countries = df_sorted.groupby('location').ffill()
+    df_countries['location'] = df_sorted['location']
+    df_countries['iso_code'] = df_sorted['iso_code']
+    
+    # Añadir columna para agrupación temporal (Semanal para fluidez sin colapsar)
+    df_countries['period'] = df_countries['date'].dt.to_period('W')
+    
+    # Agrupar por país y periodo
+    anim_data = df_countries.groupby(['location', 'iso_code', 'period']).agg({
+        'total_cases': 'max',
+        'total_deaths': 'max',
+        'total_vaccinations': 'max',
+        'total_cases_per_million': 'max',
+        'new_cases_per_million': 'mean',
+        'people_fully_vaccinated_per_hundred': 'max',
+        'population': 'first'
+    }).reset_index()
+    
+    # Convertir periodo de vuelta a datetime
+    anim_data['date'] = anim_data['period'].dt.to_timestamp()
+    
+    # Rellenar NaNs con 0
+    anim_data = anim_data.fillna(0)
+    
+    return anim_data
+
 # Cargar datos
 with st.spinner('Cargando datos de COVID-19...'):
     df = load_data()
@@ -192,10 +230,18 @@ if page == "📊 Dashboard Global":
     )
     
     # Crear el mapa de calor
-    latest_data_map = df_filtered[
-        (df_filtered['date'] == df_filtered['date'].max()) & 
-        (df_filtered['is_aggregate'] == False)
-    ]
+    # Para vacunación, usar datos recientes ya que en fechas tempranas no había vacunas
+    if 'vaccin' in map_metric.lower():
+        # Usar el dataset completo y tomar el último registro válido de cada país
+        latest_data_map = df[df['is_aggregate'] == False].groupby('location').last().reset_index()
+        # Filtrar solo países con datos de vacunación válidos
+        latest_data_map = latest_data_map[latest_data_map[map_metric].notna()]
+        st.info("📅 Mostrando datos de vacunación más recientes disponibles (independiente del filtro de fechas)")
+    else:
+        latest_data_map = df_filtered[
+            (df_filtered['date'] == df_filtered['date'].max()) & 
+            (df_filtered['is_aggregate'] == False)
+        ]
     
     # Nombres de métricas para labels
     metric_labels = {
@@ -276,7 +322,12 @@ if page == "📊 Dashboard Global":
     
     with col2:
         st.subheader("💉 Top 10 Países por Vacunación (% Población)")
-        top_vax = latest_data.nlargest(10, 'people_fully_vaccinated_per_hundred')[['location', 'people_fully_vaccinated_per_hundred']]
+        # Usar datos del dataset completo - último registro válido por país
+        vax_data = df[df['is_aggregate'] == False].groupby('location').last().reset_index()
+        # Filtrar solo países con datos de vacunación válidos
+        vax_data = vax_data[vax_data['people_fully_vaccinated_per_hundred'].notna()]
+        
+        top_vax = vax_data.nlargest(10, 'people_fully_vaccinated_per_hundred')[['location', 'people_fully_vaccinated_per_hundred']]
         
         fig = px.bar(
             top_vax, 
@@ -385,106 +436,316 @@ elif page == "🌍 Comparación de Países":
         st.warning("Por favor, selecciona al menos un país para comparar")
 
 # ============================================================
-# PÁGINA 3: HISTORIA DE LA PANDEMIA
+# PÁGINA 3: HISTORIA DE LA PANDEMIA (NARRATIVA VISUAL)
+# ============================================================
+# ============================================================
+# PÁGINA 3: HISTORIA DE LA NARRATIVA VISUAL)
 # ============================================================
 elif page == "📖 Historia de la Pandemia":
-    st.header("📖 La Historia de la Pandemia de COVID-19")
-    
+    st.header("🎥 La Historia de la Pandemia de COVID-19")
     st.markdown("""
-    ### 🌍 El Comienzo (Diciembre 2019 - Marzo 2020)
+    **Una historia visual del evento que cambió al mundo**
     
-    En diciembre de 2019, los primeros casos de una misteriosa neumonía fueron reportados en Wuhan, China. 
-    Lo que comenzó como un brote local rápidamente se convirtió en una pandemia global.
+    Acomódate y observa cómo se desplegó la pandemia semana a semana. 
+    Esta es la historia de cómo COVID-19 transformó nuestro planeta.
     """)
     
-    # Visualización del inicio
-    world_data = df[df['location'] == 'World']
-    early_data = world_data[world_data['date'] < '2020-06-01']
-    
-    fig = px.area(
-        early_data,
-        x='date',
-        y='new_cases_smoothed',
-        title='Los Primeros Meses: Propagación Inicial',
-        labels={'date': 'Fecha', 'new_cases_smoothed': 'Casos Nuevos Diarios'}
-    )
-    fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
+    # Preparar datos animados
+    with st.spinner('Preparando visualizaciones (optimizadas)...'):
+        anim_df = prepare_animation_data(df)
     
     st.markdown("---")
     
-    st.markdown("""
-    ### 📊 Las Olas de la Pandemia
-    
-    La pandemia no fue uniforme: vino en oleadas, cada una con sus características únicas.
-    Cada ola reflejó diferentes variantes del virus, medidas de contención y temporadas del año.
-    """)
-    
-    # Marcar las olas principales
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=world_data['date'],
-        y=world_data['new_cases_smoothed'],
-        fill='tozeroy',
-        name='Casos Nuevos'
-    ))
-    
-    # Añadir anotaciones para eventos importantes
-    events = [
-        ('2020-03-11', 'OMS declara\npandemia', world_data[world_data['date'] == '2020-03-11']['new_cases_smoothed'].values[0] if len(world_data[world_data['date'] == '2020-03-11']) > 0 else 0),
-        ('2020-12-08', 'Primera vacuna\naprobada', world_data[world_data['date'] == '2020-12-08']['new_cases_smoothed'].values[0] if len(world_data[world_data['date'] == '2020-12-08']) > 0 else 0),
-        ('2021-11-26', 'Variante\nÓmicron', world_data[world_data['date'] == '2021-11-26']['new_cases_smoothed'].values[0] if len(world_data[world_data['date'] == '2021-11-26']) > 0 else 0),
-    ]
-    
-    for date, text, y in events:
-        fig.add_vline(x=date, line_dash="dash", line_color="red", opacity=0.5)
-        fig.add_annotation(x=date, y=y, text=text, showarrow=True)
-    
-    fig.update_layout(
-        title='Las Diferentes Olas de COVID-19',
-        xaxis_title='Fecha',
-        yaxis_title='Casos Nuevos Diarios',
-        height=500,
-        hovermode='x unified'
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    # ============================================================
+    # SECCIÓN 1: LA CARRERA DE LAS NACIONES (Bar Chart Race)
+    # ============================================================
+    with st.container():
+        st.subheader("🏁 La Carrera de las Naciones")
+        st.markdown("""
+        Observa cómo los epicentros cambiaron con el tiempo. 
+        **Mostrando Top 8 países por casos acumulados.**
+        """)
+        
+        # Selector de métrica
+        metric_race = st.selectbox(
+            "Selecciona la métrica a visualizar",
+            options=['total_cases', 'total_cases_per_million', 'people_fully_vaccinated_per_hundred', 'total_deaths'],
+            format_func=lambda x: {
+                'total_cases': 'Casos Totales',
+                'total_cases_per_million': 'Casos por Millón de Habitantes',
+                'people_fully_vaccinated_per_hundred': '% Población Totalmente Vacunada',
+                'total_deaths': 'Muertes Totales'
+            }[x],
+            key='metric_race_selector'
+        )
+        
+        # Títulos y formatos según métrica
+        metric_info = {
+            'total_cases': {'title': 'Casos Totales', 'format': '{:,.0f}'},
+            'total_cases_per_million': {'title': 'Casos por Millón', 'format': '{:,.1f}'},
+            'people_fully_vaccinated_per_hundred': {'title': '% Vacunación', 'format': '{:.1f}%'},
+            'total_deaths': {'title': 'Muertes Totales', 'format': '{:,.0f}'}
+        }
+        
+        # Preparar datos para bar chart race - Solo Top 8
+        # Asegurar formato fecha string para consistencia en frames
+        anim_df['date_str'] = anim_df['date'].dt.strftime('%Y-%m-%d')
+        
+        # Preparar datos por fecha
+        dates_sorted = sorted(anim_df['date_str'].unique())
+        
+        # Crear figura base con el primer frame
+        first_date = dates_sorted[0]
+        first_data = anim_df[anim_df['date_str'] == first_date].nlargest(8, metric_race).sort_values(metric_race)
+        first_max = first_data[metric_race].max()
+        
+        # Crear figura manualmente con go.Figure para control total
+        fig_race = go.Figure()
+        
+        # Añadir el primer frame como datos iniciales
+        fig_race.add_trace(go.Bar(
+            x=first_data[metric_race],
+            y=first_data['location'],
+            orientation='h',
+            marker=dict(
+                color=first_data['location'].astype('category').cat.codes,
+                colorscale='Viridis'
+            ),
+            text=first_data[metric_race].apply(lambda x: metric_info[metric_race]['format'].format(x)),
+            textposition='outside'
+        ))
+        
+        # Construir frames manualmente
+        frames = []
+        for date_str in dates_sorted:
+            frame_data = anim_df[anim_df['date_str'] == date_str].nlargest(8, metric_race).sort_values(metric_race)
+            frame_max = frame_data[metric_race].max()
+            
+            # Crear frame con layout específico para autoescale
+            frame = go.Frame(
+                data=[go.Bar(
+                    x=frame_data[metric_race],
+                    y=frame_data['location'],
+                    orientation='h',
+                    marker=dict(
+                        color=frame_data['location'].astype('category').cat.codes,
+                        colorscale='Viridis'
+                    ),
+                    text=frame_data[metric_race].apply(lambda x: metric_info[metric_race]['format'].format(x)),
+                    textposition='outside'
+                )],
+                name=date_str,
+                layout=go.Layout(
+                    xaxis=dict(range=[0, frame_max * 1.15])
+                )
+            )
+            frames.append(frame)
+        
+        fig_race.frames = frames
+        
+        # Configurar layout general
+        fig_race.update_layout(
+            title=f'Top 8 Países por {metric_info[metric_race]["title"]}',
+            xaxis=dict(
+                title=metric_info[metric_race]['title'],
+                range=[0, first_max * 1.15]
+            ),
+            yaxis=dict(title=''),
+            showlegend=False,
+            height=500,
+            bargap=0.1,
+            margin=dict(l=150, r=50, t=50, b=50),
+            updatemenus=[{
+                'type': 'buttons',
+                'showactive': False,
+                'buttons': [{
+                    'label': '▶ Play',
+                    'method': 'animate',
+                    'args': [None, {
+                        'frame': {'duration': 400, 'redraw': True},  # Más lento: 400ms
+                        'fromcurrent': True,
+                        'transition': {'duration': 300, 'easing': 'linear'}  # Transición suave
+                    }]
+                }, {
+                    'label': '⏸ Pause',
+                    'method': 'animate',
+                    'args': [[None], {
+                        'frame': {'duration': 0, 'redraw': False},
+                        'mode': 'immediate',
+                        'transition': {'duration': 0}
+                    }]
+                }],
+                'x': 0.1,
+                'y': -0.05,
+                'xanchor': 'left',
+                'yanchor': 'top'
+            }],
+            sliders=[{
+                'active': 0,
+                'steps': [{
+                    'args': [[f.name], {
+                        'frame': {'duration': 0, 'redraw': True},
+                        'mode': 'immediate',
+                        'transition': {'duration': 0}
+                    }],
+                    'label': f.name,
+                    'method': 'animate'
+                } for f in frames],
+                'x': 0.1,
+                'len': 0.9,
+                'y': -0.15,
+                'xanchor': 'left',
+                'yanchor': 'top'
+            }]
+        )
+        
+        st.plotly_chart(fig_race, use_container_width=True)
     
     st.markdown("---")
     
-    st.markdown("""
-    ### 💉 La Era de las Vacunas
-    
-    El desarrollo de vacunas en tiempo récord fue un hito científico sin precedentes.
-    A finales de 2020, comenzó la mayor campaña de vacunación de la historia.
-    """)
-    
-    # Gráfico de vacunación
-    vax_data = world_data[world_data['date'] >= '2020-12-01']
-    
-    fig = px.area(
-        vax_data,
-        x='date',
-        y='people_fully_vaccinated_per_hundred',
-        title='Progreso de la Vacunación Mundial',
-        labels={'date': 'Fecha', 'people_fully_vaccinated_per_hundred': '% Población Vacunada'}
-    )
-    fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
+    # ============================================================
+    # SECCIÓN 2: EL MAPA DEL CONTAGIO (Animated Choropleth)
+    # ============================================================
+    with st.container():
+        st.subheader("🌍 El Mapa del Contagio")
+        st.markdown("""
+        **Evolución geográfica de la pandemia.**
+        """)
+        
+        # Crear mapa animado
+        fig_map_animated = px.choropleth(
+            anim_df,
+            locations='iso_code',
+            color='total_cases',
+            hover_name='location',
+            animation_frame='date',
+            color_continuous_scale='Reds',
+            range_color=[1, anim_df['total_cases'].max()],
+            labels={'total_cases': 'Casos Totales'},
+            title='Propagación Global de COVID-19',
+            height=600
+        )
+        
+        fig_map_animated.update_layout(
+            geo=dict(
+                showframe=False,
+                showcoastlines=True,
+                projection_type='natural earth'
+            )
+        )
+        
+        fig_map_animated.update_traces(
+            colorbar=dict(title='Casos<br>Totales'),
+            zmin=0,
+            colorscale='Reds'
+        )
+        
+        # Configurar velocidad
+        fig_map_animated.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 150
+        
+        st.plotly_chart(fig_map_animated, use_container_width=True)
     
     st.markdown("---")
     
-    st.markdown("""
-    ### 🎯 Lecciones Aprendidas y el Futuro
+    # ============================================================
+    # SECCIÓN 3: HITOS DECISIVOS (Timeline Interactivo)
+    # ============================================================
+    with st.container():
+        st.subheader("📍 Hitos Decisivos: Cronología Interactiva")
+        st.markdown("Explora los hitos comparando el mundo con países específicos.")
+        
+        col_filtro1, col_filtro2 = st.columns(2)
+        
+        # Preparar lista de países incluyendo 'World'
+        all_locs = ['World'] + sorted(df[df['is_aggregate'] == False]['location'].unique().tolist())
+        
+        with col_filtro1:
+            sel_locations = st.multiselect(
+                "Selecciona Ubicaciones",
+                options=all_locs,
+                default=['World', 'United States', 'China'],
+                max_selections=5
+            )
+            
+        with col_filtro2:
+            sel_metric_time = st.selectbox(
+                "Métrica",
+                ['new_cases_smoothed', 'new_deaths_smoothed', 'people_fully_vaccinated_per_hundred'],
+                format_func=lambda x: {
+                    'new_cases_smoothed': 'Casos Nuevos Diarios',
+                    'new_deaths_smoothed': 'Muertes Nuevas Diarias',
+                    'people_fully_vaccinated_per_hundred': '% Vacunación'
+                }[x]
+            )
+        
+        # Crear gráfico dinámico
+        timeline_df = df[df['location'].isin(sel_locations)]
+        
+        fig_timeline = px.line(
+            timeline_df,
+            x='date',
+            y=sel_metric_time,
+            color='location',
+            title='Cronología Interactiva',
+            labels={'date': 'Fecha', sel_metric_time: 'Valor'}
+        )
+        
+        # Eventos fijos
+        key_events = [
+            ('2020-03-11', 'Pandemia', 'red'),
+            ('2020-12-08', 'Vacuna', 'green'),
+            ('2021-11-26', 'Ómicron', 'orange'),
+            ('2023-05-05', 'Fin', 'blue')
+        ]
+        
+        for date, txt, color in key_events:
+            fig_timeline.add_vline(x=date, line_dash="dash", line_color=color, opacity=0.5)
+            # Solo añadir anotación si está en rango
+            fig_timeline.add_annotation(
+                x=date, y=0, text=txt, showarrow=False, yref='paper', yanchor='bottom',
+                font=dict(color=color)
+            )
+            
+        fig_timeline.update_layout(height=500, hovermode='x unified')
+        st.plotly_chart(fig_timeline, use_container_width=True)
     
-    La pandemia de COVID-19 transformó al mundo de maneras que aún estamos comprendiendo:
+    st.markdown("---")
     
-    - **Ciencia acelerada**: El desarrollo de vacunas de ARNm en menos de un año.
-    - **Transformación digital**: Trabajo remoto, telemedicina y educación online.
-    - **Desigualdad global**: Las diferencias en el acceso a vacunas entre países.
-    - **Preparación futura**: Nuevos sistemas de vigilancia y respuesta epidemiológica.
-    
-    Aunque la fase aguda de la pandemia ha quedado atrás, sus efectos perdurarán por generaciones.
-    """)
+    # ============================================================
+    # RESUMEN FINAL: MÉTRICAS BIG NUMBER
+    # ============================================================
+    with st.container():
+        st.subheader("📊 El Impacto Final")
+        
+        # Calcular métricas globales finales obteniendo maximos de acumulados
+        # Esto evita NaNs si el último día no tiene reporte
+        world_df = df[df['location'] == 'World']
+        
+        # Usar el máximo valor histórico para métricas acumuladas
+        total_c = world_df['total_cases'].max()
+        total_d = world_df['total_deaths'].max()
+        total_v = world_df['total_vaccinations'].max()
+        total_p = world_df['people_fully_vaccinated_per_hundred'].max()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("🌍 Casos Totales", f"{total_c:,.0f}" if pd.notna(total_c) else "N/A")
+        
+        with col2:
+            st.metric("💔 Muertes Totales", f"{total_d:,.0f}" if pd.notna(total_d) else "N/A")
+        
+        with col3:
+            st.metric("💉 Vacunas", f"{total_v:,.0f}" if pd.notna(total_v) else "N/A")
+        
+        with col4:
+            st.metric("🛡️ % Vacunado", f"{total_p:.1f}%" if pd.notna(total_p) else "N/A")
+        
+        st.markdown("""
+        ---
+        **"Los datos cuentan la historia, pero las personas vivieron la realidad."**
+        """)
+
 
 # ============================================================
 # PÁGINA 4: EXPLORADOR DE DATOS
