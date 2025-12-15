@@ -75,7 +75,7 @@ def clean_country_groups(df):
 @st.cache_data
 def load_data():
     """Carga los datos de COVID-19 con caché para mejor rendimiento"""
-    url = "owid-covid-data.csv"
+    url = os.path.join("..", "data", "owid-covid-data.csv")
     
     # Intentar cargar archivo local, si no existe, descargarlo
     if os.path.exists(url):
@@ -83,7 +83,9 @@ def load_data():
     else:
         url_online = "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv"
         df = pd.read_csv(url_online)
-        df.to_csv("owid-covid-data.csv", index=False)
+        # Guardar en la carpeta data
+        os.makedirs(os.path.join("..", "data"), exist_ok=True)
+        df.to_csv(url, index=False)
     
     df['date'] = pd.to_datetime(df['date'])
     
