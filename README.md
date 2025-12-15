@@ -251,7 +251,7 @@ El dataset incluye más de 60 columnas:
 
 ## 👤 Autor
 
-**David Moreda**
+**David Moreda**, **Carlos Díaz**, **Pedro Martínez**
 
 Proyecto desarrollado como parte del **Máster en Inteligencia Artificial** - Curso de Almacenamiento, Visualización y Procesamiento de Datos.
 
